@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Schichtplan</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0a84ff">
+  <style>
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{height:100%}
+    body{margin:0;font-family:-apple-system, SF Pro Text, Helvetica, Arial, sans-serif;background:#fff;color:#111;overflow-x:hidden}
+    .header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #e6e6e6}
+    .header .bar{max-width:900px;margin:0 auto;padding:12px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .h1{font-size:20px;font-weight:700;margin:0}
+    .nav{display:flex;gap:6px}
+    .nav .btn{padding:6px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;background:#f7f7f7}
+    .main{min-height:100%;max-width:900px;margin:0 auto;padding:8px 12px calc(78px + env(safe-area-inset-bottom))}
+    .view{display:none}
+    .view.active{display:block}
+    .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+    .wd{text-align:center;font-size:11px;color:#8a8a8a;margin:8px 0 2px;font-weight:600}
+    .card{border:1px solid #e6e6e6;border-radius:10px;padding:8px;min-height:80px;display:flex;flex-direction:column;gap:6px}
+    .card.heute{border-color:#0a84ff;box-shadow:0 0 0 2px rgba(10,132,255,.35)}
+    .card-header{display:flex;align-items:center;justify-content:space-between}
+    .daynum{font-weight:700;font-size:15px}
+    .add-btn{border:none;border-radius:50%;width:26px;height:26px;font-size:18px;line-height:26px;text-align:center;cursor:pointer;background:#0a84ff;color:#fff}
+    .card-body{display:flex;flex-direction:column;gap:4px}
+    .shift-list{display:flex;flex-direction:column;gap:4px}
+    .shift-row{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px;border:1px dashed #e6e6e6;border-radius:8px}
+    .shift-row.unfilled{border-color:#ff3b30;color:#ff3b30}
+    .shift-label{font-weight:600;font-size:13px}
+    .shift-detail{display:none;font-size:12px;color:#666;margin-top:2px}
+    .card.expanded .shift-detail{display:block}
+    .row-right{display:flex;gap:6px}
+    .icon-btn{border:none;background:transparent;padding:4px;cursor:pointer;font-size:14px}
+    .icon-del{color:#ff3b30}
+    .empty{color:#8a8a8a;font-size:12px;padding:2px 0 4px}
+    .editor{display:none;flex-direction:column;gap:6px;border-top:1px solid #e6e6e6;padding-top:6px}
+    .editor .line{display:flex;align-items:center;gap:6px}
+    .editor input[type="time"], .editor input[type="text"]{font-size:14px;padding:6px;border:1px solid #e6e6e6;border-radius:8px;width:100%}
+    .editor .save{background:#0a84ff;color:#fff;border:none;border-radius:8px;padding:6px 10px}
+    .editor .cancel{background:transparent;color:#8a8a8a;border:none;padding:6px 8px}
+    .editor .apply{display:flex;align-items:center;gap:6px;font-size:12px;color:#8a8a8a}
+    .editor .error{color:#ff3b30;font-size:12px;min-height:1em}
+    .summary{margin:10px 0;border:1px solid #e6e6e6;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px}
+    .summary .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+    .summary .label{color:#8a8a8a;font-size:12px}
+    .summary .value{font-weight:700}
+    .summary .emps{font-size:12px;color:#111;opacity:.85}
+    .summary .emps .warn{color:#ff3b30;font-weight:600}
+    #log-wrap{margin:10px 0;border:1px solid #e6e6e6;border-radius:8px;overflow:hidden}
+    #log-head{display:flex;justify-content:space-between;align-items:center;background:#fff;padding:6px 8px}
+    #log{background:#000;color:#0f0;font-size:11px;padding:6px;white-space:pre-wrap;max-height:160px;overflow:auto}
+    #log.collapsed{max-height:0;padding:0;overflow:hidden}
+    .footer{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#fff;border-top:1px solid #e6e6e6;padding:8px calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 8px) calc(env(safe-area-inset-left) + 12px)}
+    .footer .bar{max-width:900px;margin:0 auto;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .btn{border:1px solid #ddd;background:#f7f7f7;border-radius:10px;padding:10px 14px;font-size:14px}
+    .btn.small{padding:6px 10px;font-size:13px;border-radius:8px}
+    .btn.primary{background:#0a84ff;border-color:#0a84ff;color:#fff}
+    .list{display:flex;flex-direction:column;gap:10px}
+    .card-profile{border:1px solid #e6e6e6;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:10px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    label{font-size:12px;color:#8a8a8a}
+    input[type="text"], input[type="number"], textarea{padding:6px;border:1px solid #e6e6e6;border-radius:8px;font-size:14px}
+    .name{flex:1 1 200px}
+    .small{width:110px}
+    .ta{width:100%;min-height:120px}
+    .hr{height:1px;background:#e6e6e6;margin:4px 0}
+    .avail-week{display:grid;grid-template-columns:120px 1fr auto;gap:8px;align-items:center}
+    .avail-week .daylbl{font-size:12px;color:#666}
+    .avail-week select{padding:6px;border:1px solid #e6e6e6;border-radius:8px;font-size:13px}
+    .avail-week button{border:1px solid #e6e6e6;background:#f7f7f7;border-radius:8px;padding:6px 8px;font-size:12px}
+    .avail-detail{display:none;gap:6px;flex-direction:column}
+    .toggle{border:1px solid #e6e6e6;background:#f7f7f7;border-radius:8px;padding:6px 8px;font-size:12px;align-self:flex-start}
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="bar">
+      <div class="nav">
+        <button class="btn" id="btn-prev">‹ Monat</button>
+        <button class="btn" id="btn-next">Monat ›</button>
+        <button class="btn" id="btn-copy-prev">Vormonat übernehmen</button>
+      </div>
+      <div class="h1" id="title">Schichtplan</div>
+      <div style="width:120px"></div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="view-main" class="view active">
+      <div class="grid" id="wd-head">
+        <div class="wd">Mo</div><div class="wd">Di</div><div class="wd">Mi</div><div class="wd">Do</div><div class="wd">Fr</div><div class="wd">Sa</div>
+      </div>
+      <div id="grid" class="grid" style="margin-top:8px"></div>
+
+      <div class="summary">
+        <div class="row"><div class="label">Summe Stunden (Monat)</div><div class="value" id="sum-value">0:00 h</div></div>
+        <div class="row"><div class="label">Pro Mitarbeiter</div><div class="emps" id="sum-emps">–</div></div>
+      </div>
+
+      <div id="log-wrap">
+        <div id="log-head">
+          <span class="badge">Debug-Log</span>
+          <button class="tb" id="btn-log-toggle">▾</button>
+        </div>
+        <div id="log">-- Debug Log --\n</div>
+      </div>
+    </div>
+
+    <div id="view-profiles" class="view">
+      <div style="margin:6px 0 6px;font-weight:600;">Mitarbeiter-Profile</div>
+      <div class="list" id="list-profiles"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="bar">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn" id="btn-left">Kontrolle</button>
+        <button class="btn" id="btn-mid">Log leeren</button>
+        <button class="btn" id="btn-right">Log ▾</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn small" id="btn-prev-2">‹ Monat</button>
+        <button class="btn small" id="btn-next-2">Monat ›</button>
+        <button class="btn small" id="btn-copy-prev-2">Vormonat übernehmen</button>
+        <button class="btn primary" id="btn-calc">Berechnen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    // PWA offline aktivieren
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+    }
+  </script>
+</body>
+</html>
