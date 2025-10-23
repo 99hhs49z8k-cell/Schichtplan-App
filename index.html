@@ -14,10 +14,7 @@
     .header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #e6e6e6}
     .header .bar{max-width:900px;margin:0 auto;padding:12px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     /* obere Knöpfe ausblenden, Titel bleibt */
-.header .nav { 
-  display: none; 
-}
-
+.header .nav { display: none; }
 /* Titel zentriert halten */
 .header .bar { 
   justify-content: center; 
@@ -29,7 +26,12 @@
     .h1 {
   margin-bottom: 6px; /* kleiner Abstand unter dem Monatstitel */
 }
-    .h1{font-size:20px;font-weight:700;margin:0}
+    .h1 { 
+  font-size: 20px; 
+  font-weight: 700; 
+  text-align: center; 
+  margin: 0 0 6px; 
+}
     .nav{display:flex;gap:6px}
     .nav .btn{padding:6px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;background:#f7f7f7}
     .main{min-height:100%;max-width:900px;margin:0 auto;padding:8px 12px calc(78px + env(safe-area-inset-bottom))}
