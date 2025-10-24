@@ -623,3 +623,97 @@
   bootFromTempIfAny(MONTH_KEY);
   rebuildDays(); renderDays(); updateSummary(); log('ready '+MONTH_KEY);
 })();
+// ===== Update-Benachrichtigung für PWA =====
+(function setupPWAUpdatePrompt() {
+  if (!('serviceWorker' in navigator)) return;
+
+  // Kleine Helfer: Banner erzeugen
+  function showUpdateBanner(onReload) {
+    // Falls schon vorhanden: nicht doppelt erzeugen
+    if (document.getElementById('pwa-update-bar')) return;
+
+    const bar = document.createElement('div');
+    bar.id = 'pwa-update-bar';
+    bar.style.position = 'fixed';
+    bar.style.left = '0';
+    bar.style.right = '0';
+    bar.style.bottom = '0';
+    bar.style.padding = '10px 12px';
+    bar.style.background = '#0a84ff';
+    bar.style.color = '#fff';
+    bar.style.display = 'flex';
+    bar.style.alignItems = 'center';
+    bar.style.justifyContent = 'space-between';
+    bar.style.gap = '8px';
+    bar.style.zIndex = '999999';
+
+    const txt = document.createElement('div');
+    txt.textContent = 'Neue Version verfügbar';
+    txt.style.fontWeight = '600';
+
+    const btn = document.createElement('button');
+    btn.textContent = 'Aktualisieren';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '8px';
+    btn.style.padding = '8px 10px';
+    btn.style.background = '#fff';
+    btn.style.color = '#0a84ff';
+    btn.style.fontWeight = '600';
+
+    btn.addEventListener('click', () => {
+      try {
+        onReload && onReload();
+      } catch (_) {}
+    });
+
+    bar.appendChild(txt);
+    bar.appendChild(btn);
+    document.body.appendChild(bar);
+  }
+
+  // Wenn der aktive Controller wechselt (neuer SW übernimmt): Seite neu laden
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    // Einmal neu laden; verhindert Endlosschleifen
+    window.location.reload();
+  });
+
+  // Registrierung + Update-Detektion
+  window.addEventListener('load', async () => {
+    try {
+      // Registrieren (falls du die Registrierung noch in index.html hast, dort entfernen)
+      const reg = await navigator.serviceWorker.register('./service-worker.js?v=4');
+
+      // 1) Direkt beim Laden einmal nach Updates suchen
+      try { reg.update(); } catch (_) {}
+
+      // 2) Wenn ein neuer SW gefunden wurde
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+
+        newWorker.addEventListener('statechange', () => {
+          // "installed" + es gibt bereits einen aktiven Controller => Update verfügbar
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdateBanner(() => {
+              // Nutzer klickt "Aktualisieren" -> SW anweisen sofort zu aktivieren
+              if (reg.waiting) {
+                reg.waiting.postMessage('SKIP_WAITING');
+              } else {
+                // Fallback, falls waiting nicht greifbar
+                try { reg.update(); } catch (_) {}
+              }
+            });
+          }
+        });
+      });
+
+      // 3) Zusätzliche Checks (optional): alle 60 Minuten nach Updates schauen
+      setInterval(() => {
+        try { reg.update(); } catch (_) {}
+      }, 60 * 60 * 1000);
+    } catch (e) {
+      // Ignorieren – App läuft auch ohne SW
+      // console.log('SW registration failed', e);
+    }
+  });
+})();
