@@ -1,9 +1,9 @@
-const CACHE = 'schichtplan-v1';
+const CACHE = 'schichtplan-v4';
 const ASSETS = [
   './',
-  './index.html',
-  './app.js',
-  './manifest.json',
+  './index.html?v=4',
+  './app.js?v=4',
+  './manifest.json?v=4',
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
